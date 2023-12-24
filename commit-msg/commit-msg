@@ -1,0 +1,46 @@
+#!/bin/bash
+set -euxCo pipefail
+
+comment_char="$(git config core.comment_char)"
+
+# set default comment charactor if comment_char is empty
+if [[ -z "$comment_char" ]]; then
+  comment_char="#"
+fi
+
+# remove comment line, only whitespace line and empty line
+readonly MSG=`cat $1 | sed -e "/^$comment_char/d" | sed -e '/^\s*$/d' | sed -e '/^$/d'`
+
+# check issue number existence
+function check_issue_number() {
+  _branch_name="$(git rev-parse --abbrev-ref HEAD)"
+
+  _issue_number="#[0-9]+"
+
+  # if issue number exists in branch name, use it
+  if [[ $_branch_name =~ "#[0-9]+" ]]; then
+    _issue_number=${BASH_REMATCH[0]}
+  fi
+
+  readonly _GREEN_FONT_BEGIN="\033[32;22m"
+  readonly _GREEN_FONT_END="\033[0m"
+  readonly _RED_FONT_BEGIN="\033[31;22m"
+  readonly _RED_FONT_END="\033[0m"
+
+  if echo "$MSG" | grep --no-message "$_issue_number" > /dev/null; then
+    echo "✅${_GREEN_FONT_BEGIN}OK${_GREEN_FONT_END} : issue番号の存在チェック"
+    echo ""
+    return 0
+  else
+    echo "⚠️${_RED_FONT_BEGIN}NG${_RED_FONT_END} : issue番号の存在チェック:"
+    echo "  コミットメッセージにissue番号が含まれていません"
+    echo "  Format: #issue番号"
+    echo "  Example: #1234"
+    echo ""
+    return 1
+  fi
+}
+
+exit_code=0
+
+exit ${exit_code}
